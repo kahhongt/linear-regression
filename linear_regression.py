@@ -10,16 +10,25 @@ class LinearReg:
     # create a class to generate and store all linear regression variables, based on inputs x and y
     
     # initiate constructor of the class
-    def __init__(self, x: list, y: list, x_label: str = 'x', y_label: str = 'y'):
+    def __init__(self, x: list, y: list, x_label: str = 'x', y_label: str = 'y', log_y: bool = False):
+        # set whether to log or not
+        self.log_y = log_y
+        
+        # if we choose to log y
+        if self.log_y == True:
+            y = np.log(y)
+        else:
+            pass
+        
         # store x and y in a dataframe and extract reusable variables
         self.df = pd.DataFrame(list(zip(x, y)), columns=['x', 'y'])
-        self.mean_x, self.mean_y = df['x'].mean(), df['y'].mean()
-        self.std_x, self.std_y = df['x'].std(), df['y'].std()
+        self.mean_x, self.mean_y = self.df['x'].mean(), self.df['y'].mean()
+        self.std_x, self.std_y = self.df['x'].std(), self.df['y'].std()
         self.n = len(self.df)
         
         # generate standardised values
-        self.df['standard_x'] = (df['x'] - self.mean_x) / self.std_x
-        self.df['standard_y'] = (df['y'] - self.mean_y) / self.std_y
+        self.df['standard_x'] = (self.df['x'] - self.mean_x) / self.std_x
+        self.df['standard_y'] = (self.df['y'] - self.mean_y) / self.std_y
 
         # generate correlation coefficient from first principles: average product of standardised values of x and y
         # Note we can also use the correlation coefficient
@@ -35,9 +44,6 @@ class LinearReg:
         self.df['lin_y'] = self.b0 + self.b1 * self.df.x
         self.df['err'] = self.df.y - self.df.lin_y
         self.rmse = np.sqrt((self.df.err ** 2).sum() / self.n)
-        
-        # check for log bool of dependent variable y
-        self.y_log = False
         
         # save se_reg
         self.se_reg = np.sqrt(1/(self.n-2) * sum(self.df.err**2))
@@ -152,26 +158,6 @@ class LinearReg:
         plt.xlabel('x')
         plt.ylabel('y')
         plt.show()
-        
-    # if Y is strictly positive, we can perform a log transformation to the dependent variable
-    def log_transform_y(self, y_log: bool = False):
-        # set y_log to be bool by default
-        if self.y_log == False:
-            if y_log == True:
-                self.y_log = True
-                self.df['original_y'] = self.df.y
-                self.df['y'] = np.log(self.df.original_y)
-                self.y_log = y_log # reassign book
-            else:
-                pass
-        if self.y_log == True:
-            if y_log == False:
-                self.df['y'] = self.df.original_y
-                self.df.drop('original_y', axis=1, inplace=True)
-                self.y_log = y_log # reassign bool
-            else:
-                pass
-        return self.y_log
     
     # linear regression plot with confidence intervals
     def linear_reg_plot(self, interval: int = 1, confidence_level: float = 0.95, xmin: float = None, xmax: float = None):      
@@ -187,15 +173,38 @@ class LinearReg:
         self.confidence_intervals = [self.get_confidence_interval(x, confidence_level) for x in self.x_range]
         self.lower_bound = np.array(self.prediction) - np.array(self.confidence_intervals)
         self.upper_bound = np.array(self.prediction) + np.array(self.confidence_intervals)
-
-        # generate linear regression plot
-        fig = plt.figure(figsize=(10, 6))
-        plt.plot(self.x_range, self.prediction, color='r')
-        plt.fill_between(self.x_range, self.lower_bound, self.upper_bound, color='antiquewhite')
-        plt.scatter(self.df.x, self.df.y, s=4)        
-        plt.title(f'Linear Regression Predictions with {confidence_level * 100}% Confidence Interval')
-        plt.xlabel('x')
-        plt.ylabel('y')
+        
+        # only in the log_y case, plot the transformed prediction
+        if self.log_y == True:
+            # generate linear regression plot
+            fig = plt.figure(figsize=(15, 6))
+            log_plot = fig.add_subplot(121)
+            log_plot.plot(self.x_range, self.prediction, color='r')
+            log_plot.fill_between(self.x_range, self.lower_bound, self.upper_bound, color='antiquewhite')
+            log_plot.scatter(self.df.x, self.df.y, s=4)
+            plt.title(f'Log Linear Regression Predictions with {confidence_level * 100}% Confidence Interval')
+            plt.xlabel('x')
+            plt.ylabel('log y')
+            
+            # transformed plot
+            normal_plot = fig.add_subplot(122)
+            normal_plot.plot(self.x_range, np.exp(self.prediction), color='r')
+            normal_plot.fill_between(self.x_range, np.exp(self.lower_bound), np.exp(self.upper_bound), color='antiquewhite')
+            normal_plot.scatter(self.df.x, np.exp(self.df.y), s=4)
+            plt.title(f'Reverted Linear Regression Predictions with {confidence_level * 100}% Confidence Interval')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            
+        else:
+            # generate linear regression plot
+            fig = plt.figure(figsize=(6, 6))
+            plt.plot(self.x_range, self.prediction, color='r')
+            plt.fill_between(self.x_range, self.lower_bound, self.upper_bound, color='antiquewhite')
+            plt.scatter(self.df.x, self.df.y, s=4)
+            plt.title(f'Linear Regression Predictions with {confidence_level * 100}% Confidence Interval')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            
         plt.show()
         
     # overall summary of regression analysis
