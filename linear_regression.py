@@ -25,6 +25,7 @@ class LinearReg:
         # Note we can also use the correlation coefficient
         self.corr = sum(self.df.standard_x * self.df.standard_y) / self.n
         self.r_squared = self.corr ** 2
+        self.adj_r_squared = 1 - (((self.n - 1)/(self.n - 2)) * (1 - self.r_squared))
         
         # generate linear coefficients
         self.b1 = self.corr * self.std_y / self.std_x
@@ -187,9 +188,9 @@ class LinearReg:
         self.lower_bound = np.array(self.prediction) - np.array(self.confidence_intervals)
         self.upper_bound = np.array(self.prediction) + np.array(self.confidence_intervals)
 
-        # generate plots
+        # generate linear regression plot
         fig = plt.figure(figsize=(10, 6))
-        plt.plot(self.x_range, self.prediction)
+        plt.plot(self.x_range, self.prediction, color='r')
         plt.fill_between(self.x_range, self.lower_bound, self.upper_bound, color='antiquewhite')
         plt.scatter(self.df.x, self.df.y, s=4)        
         plt.title(f'Linear Regression Predictions with {confidence_level * 100}% Confidence Interval')
@@ -201,21 +202,24 @@ class LinearReg:
     def linear_reg_summary(self, confidence_level: float = 0.95):
         # perform assumption checks
         self.assumption_checks()
-        
+        print('\n')
         # obtain parameters
+        dp = 4
         output_dict = self.update_coefficient_standard_errors()
-        output_dict['b0'] = round(self.b0, 3)
-        output_dict['b1'] = round(self.b1, 3)
-        output_dict['Correlation'] = round(self.corr, 3)
-        output_dict['R-Squared'] = round(self.r_squared, 3)
-        output_dict['RMSE'] = round(self.rmse, 3)
-        output_dict['b0 Standard Error'] = output_dict.pop('SE B0')
-        output_dict['b1 Standard Error'] = output_dict.pop('SE B1')
+        output_dict['b0'] = round(self.b0, dp)
+        output_dict['b1'] = round(self.b1, dp)
+        output_dict['Correlation'] = round(self.corr, dp)
+        output_dict['R-Squared'] = round(self.r_squared, dp)
+        output_dict['Adjusted R-Squared'] = round(self.adj_r_squared, dp)
+        output_dict['RMSE'] = round(self.rmse, dp)
+        output_dict['b0 Standard Error'] = round(output_dict.pop('SE B0'), dp)
+        output_dict['b1 Standard Error'] = round(output_dict.pop('SE B1'), dp)
         output_dict['Regression Standard Error'] = output_dict.pop('SE Regression')
         self.output_dict = output_dict
         print('Generating LinReg Parameters...')
-        for k, v in self.output_dict.items():
-            print(f'{k}: {v}')
+        # convert to dataframe and print results
+        output_df = pd.DataFrame.from_dict(self.output_dict, orient='index').rename(columns={0: 'Value'})
+        print(output_df)
         
         # Perform linear regression, with confidence intervals
         self.linear_reg_plot(confidence_level=confidence_level)
