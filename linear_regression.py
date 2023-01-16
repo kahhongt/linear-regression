@@ -89,8 +89,8 @@ class LinearReg:
         # residuals against independent values
         residual_x_plot = figure.add_subplot(221)
         residual_x_plot.scatter(self.df.x, self.df.err, s=size)
-        plt.axhline(0, color='red')
-        plt.axvline(0, color='red')        
+        # plt.axhline(0, color='red')
+        # plt.axvline(0, color='red')        
         plt.ylabel('Error')
         plt.xlabel('x')
         plt.title('Checking for Independence of Errors')
